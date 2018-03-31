@@ -35,7 +35,8 @@ class HttpOnOffProperty2 extends Property {
 
     // In an ideal world, we would query the device and return
     // it's value.
-    this.setCachedValue(propertyDescription.value);
+    //this.setCachedValue(propertyDescription.value);
+    this.setCachedValue(this.getValue());
     this.device.notifyPropertyChanged(this);
   }
 
@@ -83,6 +84,56 @@ class HttpOnOffProperty2 extends Property {
       } catch (e) {
         console.error('Request to mqtt topic:', mqttTopic, 'failed');
         console.error(e);
+        reject(e);
+      }
+
+            
+    });
+  }
+  /**
+   * @method getValue
+   * @returns a promise which resolves to the value of this property
+   *
+   */
+  getValue() {
+    return new Promise((resolve, reject) => {
+      
+      let mqttPublishTopic = 'cmd/' + this.device.mqttid + '/POWER';
+      let mqttSubscribeTopic = 'stat/' + this.device.mqttid + '/POWER';
+      let mqttPayload = '';
+      let value = false;
+            
+      var client = mqtt.connect({ port: 1883, host: '192.168.0.2', username: 'admin', password: 'sm681600', keepalive: 10000});
+      console.log('MQQT Client connected');
+      
+      try {
+      
+        console.log('About to publish to MQQT Client. Topic:', mqttPublishTopic, 'Payload:', mqttPayload);
+        
+        client.on('connect', function () {
+            client.subscribe(mqttSubscribeTopic);
+            console.log('Subscribed to MQQT Client. Topic:',mqttSubscribeTopic);
+            client.publish(mqttPublishTopic, mqttPayload);
+            console.log('Published to MQQT Client. Topic:',mqttPublishTopic, 'Payload:', mqttPayload); 
+        })
+        
+        client.on('message', function (topic, message) {
+            // message is Buffer    
+            let  powerStatus = message.toString();
+            console.log('Message recieved by MQQT Client. Topic:', topic, 'Payload:', powerStatus);   
+            client.end(); 
+            console.log('MQQT Client disconnected');
+            if ('ON' == powerStatus) {
+                value = true;
+            }
+            resolve(value);
+        })
+                
+      } catch (e) {
+      
+        console.error('Request to publish to mqtt topic:', mqttPublishTopic, 'or subscribe to mqqt topic:', mqttSubscribeTopic, 'failed');
+        console.error(e);
+        
         reject(e);
       }
 
