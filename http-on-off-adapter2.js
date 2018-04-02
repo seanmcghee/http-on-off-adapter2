@@ -35,9 +35,22 @@ class HttpOnOffProperty2 extends Property {
 
     // In an ideal world, we would query the device and return
     // it's value.
-    //this.setCachedValue(propertyDescription.value);
-    this.setCachedValue(this.getValue());
-    this.device.notifyPropertyChanged(this);
+    //console.log('http-on-off-adapter2.js property constructor. Device:', device, 'Name:', name, 'PropertyDescription:', propertyDescription);
+    //this.setCachedValue(this.getValue());
+    //console.log('http-on-off-adapter2.js notifying property changed');
+    //this.device.notifyPropertyChanged(this);
+    var thisproperty = this;
+    this.getValue().then(function(result) {
+        console.log('http-on-off-adapter2.js getValue() returned result:', result);
+        thisproperty.setCachedValue(result);
+        console.log('http-on-off-adapter2.js notifying property changed');
+        thisproperty.device.notifyPropertyChanged(thisproperty);
+        console.log('http-on-off-adapter2.js Setting property via Promise worked'); 
+    }, function(err) {
+        console.error('Setting property via Promise failed'); 
+        console.error(err);
+        throw err;
+    });
   }
 
   /**
@@ -125,7 +138,9 @@ class HttpOnOffProperty2 extends Property {
             console.log('MQQT Client disconnected');
             if ('ON' == powerStatus) {
                 value = true;
+                console.log('getValue() about to return value:', value);
             }
+            
             resolve(value);
         })
                 
@@ -166,6 +181,43 @@ class HttpOnOffAdapter2 extends Adapter {
     super(addonManager, 'HttpOnOffAdapter2', packageName);
     addonManager.addAdapter(this);
   }
+  
+  /**
+   *
+   * Cancel pairing triggered so refresh on-off properties of existing devices
+   * 
+  */
+  cancelPairing() {
+    console.log('Http-On-Off-Adapter:', this.name, 'id', this.id, 'refreshing device properties');
+        
+    for (var deviceId in this.devices) {
+      var refreshDevice = this.getDevice(deviceId);
+      console.log('About to refresh on property for device', refreshDevice.name);
+      //console.log('Device properties', refreshDevice.properties);
+      
+      refreshDevice.properties.forEach((refreshProperty, refreshPropertyName) => {
+      
+        console.log('About to refresh property name', refreshPropertyName);
+        
+        if (refreshProperty !== null) {
+          console.log('With property definition', refreshProperty);
+          
+          refreshProperty.getValue().then(function(result) {
+            console.log('http-on-off-adapter2.js property refresh getValue() returned result:', result);
+            refreshProperty.setCachedValue(result);
+            console.log('http-on-off-adapter2.js notifying property changed');
+            refreshProperty.device.notifyPropertyChanged(refreshProperty);
+            console.log('http-on-off-adapter2.js Setting property via Promise worked'); 
+          }, function(err) {
+            console.error('Refreshing property value via Promise failed'); 
+            console.error(err);
+            throw err;
+          });
+        }
+      });   //for each property in map   
+    } //for each device in adapter
+  } //end of cancelPairing method
+
 }
 
 function loadHttpOnOffAdapter2(addonManager, manifest, _errorCallback) {
