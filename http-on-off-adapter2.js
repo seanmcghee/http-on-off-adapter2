@@ -116,7 +116,7 @@ class HttpOnOffProperty2 extends Property {
       let mqttPayload = '';
       let value = false;
             
-      var client = mqtt.connect({ port: 1883, host: '192.168.0.2', username: 'admin', password: 'sm681600', keepalive: 10000});
+      var client = mqtt.connect({ port: 1883, host: '192.168.0.2', username: 'XXXXX', password: 'xx----00', keepalive: 10000});
       console.log('MQQT Client connected');
       
       try {
